@@ -24,6 +24,8 @@ class Texture {
    * is an integer, before calling this constructor.
    * 
    * @param fileName the path to the PNG file
+   * @throws ifstream::failure if the file could not be read
+   * @throws PNGError if the PNG data was invalid or corrupt
    */
   Texture(const char* fileName);
   

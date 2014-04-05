@@ -21,8 +21,8 @@ public:
    * Constructs a new shader by loading it from disk.
    * The constructor will automatically compile the GLSL shader.
    * @param fileName the path to the GLSL shader text file
-   * @throw ifstream::failure if the shader text file could not be read
-   * @throw GLSLError if there was a GLSL compilation error
+   * @throws ifstream::failure if the shader text file could not be read
+   * @throws GLSLError if there was a GLSL compilation error
    */
   Shader(const char* fileName) {
     GLuint shaderId = 0;

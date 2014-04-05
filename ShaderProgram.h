@@ -20,6 +20,8 @@ public:
    * Constructs a shader program from the given vertex and fragment shaders.
    * @param vs a vertex shader
    * @param fs a fragment shader
+   * @throws ShaderError if the given shaders are invalid
+   * @throws GLSLError if there was a GLSL linking error
    */
   ShaderProgram(VertexShader vs, FragmentShader fs);
   
@@ -28,6 +30,8 @@ public:
    * Note: the vertex and fragment shaders will be deleted after the program is compiled.
    * @param vs the path to a vertex shader
    * @param fs the path to a fragment shader
+   * @throws ifstream::failure if one of the shader text files could not be read
+   * @throws GLSLError if there was a GLSL linking error
    */
   ShaderProgram(const char* vsFileName, const char* fsFileName);
   

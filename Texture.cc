@@ -1,8 +1,6 @@
 #include "Texture.h"
-#include <png.h>
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <stdexcept>
 #include "Exceptions.h"
 
@@ -85,11 +83,6 @@ Texture::Texture(const char* fileName) {
         channels = 3;
         glFormat = GL_RGB;
         break;
-      case PNG_COLOR_TYPE_GRAY:
-        if (bitsPerChannel < 8) png_set_expand_gray_1_2_4_to_8(pngRead);
-        bitsPerChannel = 8;
-        glFormat = GL_RGB;
-        break;
       case PNG_COLOR_TYPE_RGB:
         glFormat = GL_RGB;
         break;
@@ -109,25 +102,26 @@ Texture::Texture(const char* fileName) {
     // Convert 16-bit precision to 8-bit precision.
     if (bitsPerChannel == 16) png_set_strip_16(pngRead);
 
-    vector<png_bytep> rows(pngHeight);
+    shared_ptr<vector<png_bytep>> rows = make_shared<vector<png_bytep>>(pngHeight);
     // Note: divide by 8 bits/1 byte.
-    vector<png_byte> pngBytes(pngWidth * pngHeight * bitsPerChannel * channels / 8);
+    shared_ptr<vector<png_byte>> pngBytes = make_shared<vector<png_byte>>(pngWidth *
+      pngHeight * bitsPerChannel * channels / 8);
     // Length in bytes of one row.
     const unsigned int stride = pngWidth * bitsPerChannel * channels / 8;
 
     for (size_t row = 0; row < pngHeight; row++) {
       // We're setting the pointers "upside-down".
       png_uint_32 offset = (pngHeight - row - 1) * stride;
-      rows[row] = (png_bytep)(pngBytes.data()) + offset;
+      (*rows)[row] = (png_bytep)(pngBytes->data()) + offset;
     }
 
     // Actually read the image!
-    png_read_image(pngRead, rows.data());
+    png_read_image(pngRead, rows->data());
 
     glGenTextures(1, &textureId);
     glBindTexture(GL_TEXTURE_2D, textureId);
     glTexImage2D(GL_TEXTURE_2D, 0, glFormat, pngWidth, pngHeight, 0,
-      glFormat, GL_UNSIGNED_BYTE, pngBytes.data());
+      glFormat, GL_UNSIGNED_BYTE, pngBytes->data());
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glGenerateMipmap(GL_TEXTURE_2D);
@@ -137,6 +131,10 @@ Texture::Texture(const char* fileName) {
     }
     
     _texture = textureId;
+    _rows = rows;
+    _img = pngBytes;
+    _bitsPerChannel = bitsPerChannel;
+    _channels = channels;
   }
   catch (...) {
     // Clean up data.
@@ -168,4 +166,29 @@ void Texture::destroy() {
 
 void Texture::bind() const {
   glBindTexture(GL_TEXTURE_2D, _texture);
+}
+
+
+void Texture::get(int col, int row, unsigned char& outR, unsigned char& outG,
+  unsigned char& outB, unsigned char& outA) const {
+  if (row > _height || row < 0)
+    throw PNGError("row out of bounds");
+  if (col > _width || col < 0)
+    throw PNGError("col out of bounds");
+  
+  const int bytesPerPixel = _bitsPerChannel * _channels / 8;
+  if (bytesPerPixel < 3) // PNG must have at least RGB bytes.
+    throw PNGError("PNG cannot be sampled");
+  
+  png_bytep rowPtr = (*_rows)[row];
+  png_bytep pxPtr = rowPtr + bytesPerPixel * col;
+  outR = *(pxPtr);
+  outG = *(pxPtr + 1);
+  outB = *(pxPtr + 2);
+  if (bytesPerPixel > 3) {
+    outA = *(pxPtr + 3); // Use Alpha byte if PNG has it.
+  }
+  else {
+    outA = 255; // If PNG has RGB but no Alpha, set Alpha to 255 (max).
+  }
 }

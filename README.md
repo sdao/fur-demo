@@ -1,6 +1,12 @@
 furdemo
 ======
-Rough implementation in OpenGL (3.3 Core Profile) of fur rendering, adapted from the XNA/HLSL tutorial given by [Catalin Zima](http://www.catalinzima.com/xna/tutorials/fur-rendering/).
+Rough implementation in OpenGL (3.3 Core Profile) of fur rendering, adapted
+from the XNA/HLSL tutorial given by
+[Catalin Zima](http://www.catalinzima.com/xna/tutorials/fur-rendering/).
+This technique also works for many other fur-like objects, such as grass billowing in
+the wind. Check out [an example video](http://vimeo.com/91224543) of this fur technique
+used for real-time grass.
+
 
 Unlicense
 =========

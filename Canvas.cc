@@ -11,13 +11,14 @@
 #include "Texture.h"
 #include "FurTexture.h"
 #include "ShaderProgram.h"
+#include "Vector3.h"
 
 using namespace std;
 
 const int CANVAS_WIDTH = 500;
 const int CANVAS_HEIGHT = 500;
 const int FUR_DIM = 256;
-const float FUR_DENSITY = 0.2f;
+const float FUR_DENSITY = 0.3f;
 const int FUR_HEIGHT = 40;
 
 struct Attributes {
@@ -143,12 +144,13 @@ int main(int argc, char** argv) {
   assert(prog.hasUniform("color"));
   assert(prog.hasUniform("currentLayer"));
   assert(prog.hasUniform("maxHairLength"));
+  assert(prog.hasUniform("displacement"));
 
   prog.use();
     
   // Load textures.
   glActiveTexture(GL_TEXTURE0);
-  FurTexture fur(FUR_DIM, FUR_DIM, FUR_DENSITY);
+  FurTexture fur(FUR_DIM, FUR_DIM, FUR_HEIGHT, FUR_DENSITY);
   glUniform1i(prog.getUniform("fur"), 0);
   
   glActiveTexture(GL_TEXTURE1);
@@ -164,6 +166,9 @@ int main(int argc, char** argv) {
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+
+  // Simple physics.
+  Vector3 gravity(0.0f, -0.8f, 0.0f);
 
   while (!glfwWindowShouldClose(window)) {
     float ratio;
@@ -188,6 +193,9 @@ int main(int argc, char** argv) {
       glm::value_ptr(projection));
     
     // Other uniform attributes.
+    Vector3 force(sin(glfwGetTime()) * 0.5f, 0.0f, 0.0f);
+    Vector3 disp = gravity + force;
+    glUniform3f(prog.getUniform("displacement"), disp.x, disp.y, disp.z);
     glUniform1f(prog.getUniform("maxHairLength"), 2.0f);
   
     // Loop over layers of fur.

@@ -1,9 +1,10 @@
 #include "FurTexture.h"
 #include <cstdlib>
+#include <cmath>
 
 using namespace std;
 
-FurTexture::FurTexture(int width, int height, float density) :
+FurTexture::FurTexture(int width, int height, int layers, float density) :
   _tex(make_shared<vector<RGBColor>>(width * height)) {
   int totalPixels = width * height;
   vector<RGBColor> texArray = *_tex;
@@ -15,13 +16,21 @@ FurTexture::FurTexture(int width, int height, float density) :
   
   // Compute the number of opaque pixels (hair strands).
   int numStrands = (int)(density * totalPixels);
+  int strandsPerLayer = numStrands / layers;
   
   // Fill texture with opaque pixels.
   for (int i = 0; i < numStrands; i++) {
     // Choose a random position on the texture.
     int x = rand() % height;
     int y = rand() % width;
-    texArray[x * width + y] = RGBColor(200, 215, 0, 255);
+    
+    // Computer max layer.
+    float maxLayer = sqrt((float)(i / strandsPerLayer) / (float)layers);
+    
+    texArray[x * width + y] = RGBColor((unsigned char)(maxLayer * 255),
+                                       0,
+                                       0,
+                                       255);
   }
   
   GLuint textureId;

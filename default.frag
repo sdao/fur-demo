@@ -13,7 +13,8 @@ void main(void) {
   vec4 furData = texture(fur, fragTexCoord);
   vec4 furColor = texture(color, fragTexCoord) * fakeShadow;
   
-  furColor.a = (fragCurrentLayer == 0.0) ? 1.0 : furData.a;
+  float visibility = (fragCurrentLayer > furData.r) ? 0.0 : furData.a;
+  furColor.a = (fragCurrentLayer == 0.0) ? 1.0 : visibility;
   
   outputColor = furColor;
 }

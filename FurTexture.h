@@ -21,7 +21,7 @@ class FurTexture {
   const std::shared_ptr<std::vector<RGBColor>> _tex;
   
 public:
-  FurTexture(int width, int height, float density);
+  FurTexture(int width, int height, int layers, float density);
 };
 
 #endif

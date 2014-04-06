@@ -9,13 +9,18 @@ uniform mat4 projection;
 
 uniform float currentLayer;
 uniform float maxHairLength;
+uniform vec3 displacement;
 
 out vec2 fragTexCoord;
 out float fragCurrentLayer;
 
 void main(void) {
   vec3 newPos = pos + norm * maxHairLength * currentLayer;
-  gl_Position = projection * modelView * vec4(newPos, 1.0);
+  
+  float dispFactor = pow(currentLayer, 3.0);
+  vec3 dispPos = newPos + displacement * dispFactor;
+  
+  gl_Position = projection * modelView * vec4(dispPos, 1.0);
   fragTexCoord = texCoord;
   fragCurrentLayer = currentLayer;
 }

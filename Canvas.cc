@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <cassert>
+#include <vector>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h> 
 #include <glm/glm.hpp>
@@ -8,77 +9,87 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <png.h>
 #include "Texture.h"
+#include "FurTexture.h"
 #include "ShaderProgram.h"
 
 using namespace std;
 
-int CANVAS_WIDTH = 500;
-int CANVAS_HEIGHT = 500;
+const int CANVAS_WIDTH = 500;
+const int CANVAS_HEIGHT = 500;
+const int FUR_DIM = 256;
+const float FUR_DENSITY = 0.2f;
+const int FUR_HEIGHT = 40;
 
-struct attributes {
-  GLfloat xyz[3];
-  GLfloat rgb[3];
-  GLfloat uv[2];
+struct Attributes {
+  GLfloat xyzPosition[3];
+  GLfloat xyzNormal[3];
+  GLfloat uvTexCoord[2];
 };
 
-struct attributes triangleAttributes[] = {
-  {{-0.6, -0.4, 0.0}, {1.0, 0.0, 0.0}, {0.0, 0.0}},
-  {{ 0.6, -0.4, 0.0}, {0.0, 1.0, 0.0}, {1.0, 0.0}},
-  {{ 0.0,  0.6, 0.0}, {0.0, 0.0, 1.0}, {0.0, 1.0}}
+// A---B
+// |   |
+// C---D
+struct Attributes geom[] = {
+  {{ 10.0, -10.0, 0.0}, {0.0, 0.0, 1.0}, {1.0, 0.0}}, // D
+  {{ 10.0,  10.0, 0.0}, {0.0, 0.0, 1.0}, {1.0, 1.0}}, // B
+  {{-10.0, -10.0, 0.0}, {0.0, 0.0, 1.0}, {0.0, 0.0}}, // C
+  
+  {{ 10.0,  10.0, 0.0}, {0.0, 0.0, 1.0}, {1.0, 1.0}}, // B
+  {{-10.0,  10.0, 0.0}, {0.0, 0.0, 1.0}, {0.0, 1.0}}, // A
+  {{-10.0, -10.0, 0.0}, {0.0, 0.0, 1.0}, {0.0, 0.0}}, // C
 };
 
-GLuint initTriangleVbo() {
-  GLuint triangleBuffer;
-  glGenBuffers(1, &triangleBuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, triangleBuffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(triangleAttributes), triangleAttributes,
+GLuint initVbo() {
+  GLuint buffer;
+  glGenBuffers(1, &buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, buffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(geom), geom,
     GL_STATIC_DRAW);
   
   glBindBuffer(GL_ARRAY_BUFFER, 0);
-  
-  return triangleBuffer;
+  return buffer;
 }
 
-GLuint initTriangleVao(GLuint triangleBuffer, ShaderProgram prog) {
+GLuint initVao(GLuint buffer, ShaderProgram prog) {
   GLint posAttribute = prog.getAttribute("pos");
-  GLint colorAttribute = prog.getAttribute("color");
+  GLint normAttribute = prog.getAttribute("norm");
   GLint textureAttribute = prog.getAttribute("texCoord");
-    
+  
   // Initialize vertex array.
-  GLuint triangleArray;
-  glGenVertexArrays(1, &triangleArray);
-  glBindVertexArray(triangleArray);
+  GLuint array;
+  glGenVertexArrays(1, &array);
+  glBindVertexArray(array);
   
   // Configure attributes.
-  glBindBuffer(GL_ARRAY_BUFFER, triangleBuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, array);
   
   glVertexAttribPointer(
-    posAttribute,                            // attribute
-    3,                                       // number of elements per vertex, here (x,y,z)
-    GL_FLOAT,                                // the type of each element
-    GL_FALSE,                                // take our values as-is
-    sizeof(struct attributes),               // no extra data between each position
-    (void*)offsetof(struct attributes, xyz)  // offset in the buffer
+    posAttribute,
+    3,
+    GL_FLOAT,
+    GL_FALSE,
+    sizeof(struct Attributes),
+    (void*)offsetof(struct Attributes, xyzPosition)
   );
   glEnableVertexAttribArray(posAttribute);
-
-  glVertexAttribPointer(
-    colorAttribute,                          // attribute
-    3,                                       // number of elements per vertex, here (r,g,b)
-    GL_FLOAT,                                // the type of each element
-    GL_FALSE,                                // take our values as-is
-    sizeof(struct attributes),               // no extra data between each position
-    (void*)offsetof(struct attributes, rgb)  // offset in the buffer
-  );
-  glEnableVertexAttribArray(colorAttribute);
   
   glVertexAttribPointer(
-    textureAttribute,                        // attribute
-    2,                                       // number of elements per vertex, here (u,v)
-    GL_FLOAT,                                // the type of each element
-    GL_FALSE,                                // take our values as-is
-    sizeof(struct attributes),               // no extra data between each position
-    (void*)offsetof(struct attributes, uv)   // offset in the buffer
+    normAttribute,
+    3,
+    GL_FLOAT,
+    GL_FALSE,
+    sizeof(struct Attributes),
+    (void*)offsetof(struct Attributes, xyzNormal)
+  );
+  glEnableVertexAttribArray(normAttribute);
+  
+  glVertexAttribPointer(
+    textureAttribute,
+    2,
+    GL_FLOAT,
+    GL_FALSE,
+    sizeof(struct Attributes),
+    (void*)offsetof(struct Attributes, uvTexCoord)
   );
   glEnableVertexAttribArray(textureAttribute);
   
@@ -86,7 +97,7 @@ GLuint initTriangleVao(GLuint triangleBuffer, ShaderProgram prog) {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
   
-  return triangleArray;
+  return array;
 }
 
 int main(int argc, char** argv) {
@@ -124,24 +135,35 @@ int main(int argc, char** argv) {
   // Initialize shaders.
   ShaderProgram prog("default.vert", "default.frag");
   assert(prog.hasAttribute("pos"));
-  assert(prog.hasAttribute("color"));
+  assert(prog.hasAttribute("norm"));
   assert(prog.hasAttribute("texCoord"));
-  assert(prog.hasUniform("modelViewMatrix"));
-  assert(prog.hasUniform("projectionMatrix"));
-  assert(prog.hasUniform("tex"));
+  assert(prog.hasUniform("modelView"));
+  assert(prog.hasUniform("projection"));
+  assert(prog.hasUniform("fur"));
+  assert(prog.hasUniform("color"));
+  assert(prog.hasUniform("currentLayer"));
+  assert(prog.hasUniform("maxHairLength"));
 
   prog.use();
     
   // Load textures.
   glActiveTexture(GL_TEXTURE0);
-  Texture t("sample.png");
-  glUniform1i(prog.getUniform("tex"), 0);
+  FurTexture fur(FUR_DIM, FUR_DIM, FUR_DENSITY);
+  glUniform1i(prog.getUniform("fur"), 0);
+  
+  glActiveTexture(GL_TEXTURE1);
+  Texture furColor("bigtiger.png");
+  glUniform1i(prog.getUniform("color"), 1);
   
   // Initialize vertex buffer object.
-  GLuint triangleBuffer = initTriangleVbo();
+  GLuint vertexBuffer = initVbo();
   
   // Initialize vertex array object.
-  GLuint triangleArray = initTriangleVao(triangleBuffer, prog);
+  GLuint vertexArray = initVao(vertexBuffer, prog);
+
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
   while (!glfwWindowShouldClose(window)) {
     float ratio;
@@ -151,20 +173,31 @@ int main(int argc, char** argv) {
     ratio = width / (float) height;
     
     glViewport(0, 0, width, height);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     // Projection and model-view matrices.
-    glm::vec3 zAxis(0, 0, 1);
-    glm::mat4 transform = glm::rotate(glm::mat4(1.0f), (float) glfwGetTime() * 50.f, zAxis);
-    glm::mat4 projection = glm::ortho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-    glUniformMatrix4fv(prog.getUniform("modelViewMatrix"), 1, GL_FALSE,
-      glm::value_ptr(transform));
-    glUniformMatrix4fv(prog.getUniform("projectionMatrix"), 1, GL_FALSE,
+    glm::vec3 xAxis(1.0f, 0.0f, 0.0f);
+    glm::vec3 yAxis(0.0f, 1.0f, 0.0f);
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -30.0f)) *
+      glm::rotate(glm::mat4(1.0f), -10.0f, xAxis) *
+      glm::rotate(glm::mat4(1.0f), -10.0f, yAxis);
+    glm::mat4 projection = glm::perspective(60.0f, ratio, 0.1f, 100.0f);
+    glUniformMatrix4fv(prog.getUniform("modelView"), 1, GL_FALSE,
+      glm::value_ptr(view));
+    glUniformMatrix4fv(prog.getUniform("projection"), 1, GL_FALSE,
       glm::value_ptr(projection));
+    
+    // Other uniform attributes.
+    glUniform1f(prog.getUniform("maxHairLength"), 2.0f);
   
-    // Position and color attributes.
-    glBindVertexArray(triangleArray);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    // Loop over layers of fur.
+    for (int i = 0; i < FUR_HEIGHT; i++) {
+      // Position and color attributes.
+      glUniform1f(prog.getUniform("currentLayer"), (float)i/FUR_HEIGHT);
+      glUniform3f(prog.getUniform("color"), 1.0, 1.0, (float)i/FUR_HEIGHT);
+      glBindVertexArray(vertexArray);
+      glDrawArrays(GL_TRIANGLES, 0, sizeof(geom)/sizeof(struct Attributes));
+    }
 
     // Display and continue.
     glfwSwapBuffers(window);

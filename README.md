@@ -1,15 +1,6 @@
-gldemo
+furdemo
 ======
-
-OpenGL Core Profile 3.3 shell app using GLFW and GLEW.
-
-This project is a template for OpenGL apps wanting to run on OpenGL 3.3 Core Profile.
-It's only been tested on Mac OS X 10.9 Lion, but OpenGL 3.3 should be available on most recent operating systems.
-The Core Profile means that the fixed-function pipeline is unavailable, and everything must be done through shaders.
-GLSL 3.3 (`#version 330`) uses the new-style syntax with `in` and `out` instead of `attribute` and `varying`.
-The provided shaders show off simple texture loading from PNGs using libpng.
-
-To compile, you'll need GLFW, GLEW, GLM (OpenGL Mathematics), and libpng.
+Rough implementation in OpenGL (3.3 Core Profile) of fur rendering, adapted from the XNA/HLSL tutorial given by [Catalin Zima](http://www.catalinzima.com/xna/tutorials/fur-rendering/).
 
 Unlicense
 =========

@@ -4,8 +4,8 @@ CFLAGS = -Wall -ggdb -std=c++0x
 LIBS = -framework OpenGL -lpng -lglfw3 -lglew
 
 gldemo: *.cc *.h
-	$(CC) $(CFLAGS) $(LIBS) $(INCLUDES) -o gldemo *.cc
+	$(CC) $(CFLAGS) $(LIBS) $(INCLUDES) -o furdemo *.cc
 
 clean:
-	rm -f gldemo
-	rm -rf gldemo
+	rm -f furdemo
+	rm -rf furdemo.dSYM

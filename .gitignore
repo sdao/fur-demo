@@ -1,7 +1,7 @@
 # Build output
-gldemo.dSYM
-gldemo.dSYM/**
-gldemo
+furdemo.dSYM
+furdemo.dSYM/**
+furdemo
 
 # Compiled Object files
 *.slo

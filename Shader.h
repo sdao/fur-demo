@@ -99,4 +99,9 @@ typedef Shader<GL_VERTEX_SHADER> VertexShader;
  */
 typedef Shader<GL_FRAGMENT_SHADER> FragmentShader;
 
+/**
+ * A GLSL geometry shader.
+ */
+typedef Shader<GL_GEOMETRY_SHADER> GeometryShader;
+
 #endif

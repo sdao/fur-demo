@@ -24,8 +24,8 @@ FurTexture::FurTexture(int width, int height, int layers, float density) :
     int x = rand() % height;
     int y = rand() % width;
     
-    // Computer max layer.
-    float maxLayer = sqrt((float)(i / strandsPerLayer) / (float)layers);
+    // Compute max layer.
+    float maxLayer = pow((float)(i / strandsPerLayer) / (float)layers, 0.7);
     
     texArray[x * width + y] = RGBColor((unsigned char)(maxLayer * 255),
                                        0,
@@ -40,5 +40,4 @@ FurTexture::FurTexture(int width, int height, int layers, float density) :
     GL_RGBA, GL_UNSIGNED_BYTE, texArray.data());
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glGenerateMipmap(GL_TEXTURE_2D);
 }

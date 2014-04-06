@@ -2,32 +2,54 @@
 #include <stdexcept>
 #include "Exceptions.h"
 
-ShaderProgram::ShaderProgram(VertexShader vs, FragmentShader fs) {
-  init(vs, fs);
+using namespace boost;
+
+ShaderProgram::ShaderProgram(VertexShader vs,
+                             FragmentShader fs,
+                             boost::optional<GeometryShader> gs) {
+  init(vs, fs, gs);
 }
 
-ShaderProgram::ShaderProgram(const char* vsFileName, const char* fsFileName) {
+ShaderProgram::ShaderProgram(const char* vsFileName,
+                             const char* fsFileName,
+                             const char* gsFileName) {
   VertexShader vs(vsFileName);
   FragmentShader fs(fsFileName);
   
-  init(vs, fs);
+  optional<GeometryShader> gs;
+  if (strlen(gsFileName) == 0) {
+    gs = optional<GeometryShader>();
+  }
+  else {
+    gs = optional<GeometryShader>(GeometryShader(gsFileName));
+  }
+  
+  init(vs, fs, gs);
   
   vs.destroy();
   fs.destroy();
+  if (gs) {
+    gs.get().destroy();
+  }
 }
 
-void ShaderProgram::init(VertexShader vs, FragmentShader fs) {
+void ShaderProgram::init(VertexShader vs,
+                         FragmentShader fs,
+                         boost::optional<GeometryShader> gs) {
   GLuint programId = 0;
   bool shadersAttached = false;
   
   try {
-    if (!vs.valid() || !fs.valid()) {
-      throw ShaderError("Vertex or fragment shader not valid");
+    if (!vs.valid() || !fs.valid() || (gs && !gs.get().valid())) {
+      throw ShaderError("One of the shaders is invalid");
     }
     
     programId = glCreateProgram();
     glAttachShader(programId, vs.shaderId());
     glAttachShader(programId, fs.shaderId());
+    if (gs) {
+      glAttachShader(programId, gs.get().shaderId());
+    }
     shadersAttached = true;
     
     glLinkProgram(programId);
@@ -46,6 +68,9 @@ void ShaderProgram::init(VertexShader vs, FragmentShader fs) {
     
     glDetachShader(programId, vs.shaderId());
     glDetachShader(programId, fs.shaderId());
+    if (gs) {
+      glDetachShader(programId, gs.get().shaderId());
+    }
     
     _program = programId;
   }

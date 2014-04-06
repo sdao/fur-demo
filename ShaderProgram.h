@@ -1,39 +1,44 @@
 #ifndef _SHADERPROGRAM_H_
 #define _SHADERPROGRAM_H_
 
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <string>
 #include <map>
+#include <boost/optional.hpp>
 #include "Shader.h"
 
 /**
- * A shader program consisting of both a vertex shader and a fragment shader.
+ * A shader program consisting of a vertex shader, a geometry shader, and a fragment shader.
+ * The geometry shader is optional.
  */
 class ShaderProgram {
   std::map<string, GLint> _attributeNames;
   std::map<string, GLint> _uniformNames;
   GLuint _program;
-  void init(VertexShader vs, FragmentShader fs);
+  void init(VertexShader vs, FragmentShader fs, boost::optional<GeometryShader> gs);
   
 public:
   /**
    * Constructs a shader program from the given vertex and fragment shaders.
    * @param vs a vertex shader
    * @param fs a fragment shader
+   * @param gs (optional) a geometry shader
    * @throws ShaderError if the given shaders are invalid
    * @throws GLSLError if there was a GLSL linking error
    */
-  ShaderProgram(VertexShader vs, FragmentShader fs);
+  ShaderProgram(VertexShader vs, FragmentShader fs, boost::optional<GeometryShader> gs = boost::optional<GeometryShader>());
   
   /**
    * Constructs a shader program by loading a vertex and fragment shader from disk.
    * Note: the vertex and fragment shaders will be deleted after the program is compiled.
    * @param vs the path to a vertex shader
    * @param fs the path to a fragment shader
+   * @param gs (optional) the path to a geometry shader; pass an empty string if none
    * @throws ifstream::failure if one of the shader text files could not be read
    * @throws GLSLError if there was a GLSL linking error
    */
-  ShaderProgram(const char* vsFileName, const char* fsFileName);
+  ShaderProgram(const char* vsFileName, const char* fsFileName, const char* gsFileName);
   
   /**
    * Indicates whether the program is available for use.

@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
   // Projection and model-view matrices.
   glm::vec3 xAxis(1.0f, 0.0f, 0.0f);
   glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -30.0f)) *
-    glm::rotate(glm::mat4(1.0f), -60.0f, xAxis);
+    glm::rotate(glm::mat4(1.0f), glm::radians(-60.0f), xAxis);
   glUniformMatrix4fv(prog.getUniform("modelView"), 1, GL_FALSE,
     glm::value_ptr(view));
 
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
     glViewport(0, 0, width, height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    
     
-    glm::mat4 projection = glm::perspective(60.0f, ratio, 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(60.0f), ratio, 0.1f, 100.0f);
     glUniformMatrix4fv(prog.getUniform("projection"), 1, GL_FALSE,
       glm::value_ptr(projection));
     
